@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>YukiCat Manager</title>
+    <meta lang="zh-cn" charset="utf-8">
+
+</head>
+
+<body onload="onload()">
+    <div id="digest">
+        <p>输入六位数代码：</p>
+        <input type="number" id="ip_sixid">
+        <button onclick="refresh(false)">获取会话ID</button>
+        <button onclick="refresh(true)">获取会话内容</button>
+        <table border="1">
+            <tr>
+                <td>六位数代码:</td>
+                <td id="six_id"></td>
+                <td>会话ID:</td>
+                <td id="sess_id"></td>
+                <td>要查询的会话ID：</td>
+                <td><input id="ip_sess_id"></td>
+            </tr>
+            <tr>
+                <td rowspan="2">状态</td>
+                <td rowspan="2">
+                    <p id="status"></p>
+                </td>
+            </tr>
+        </table>
+        <table border="1">
+            <tr>
+                <td>题目号</td>
+                <td>开始时间</td>
+                <td>完成时间</td>
+            </tr>
+            <tr>
+                <td>quest_1</td>
+                <td class="start_time" id="start_1"></td>
+                <td class="acc_time" id="acc_1"></td>
+            </tr>
+            <tr>
+                <td>quest_2</td>
+                <td class="start_time" id="start_2"></td>
+                <td class="acc_time" id="acc_2"></td>
+            </tr>
+            <tr>
+                <td>quest_3</td>
+                <td class="start_time" id="start_3"></td>
+                <td class="acc_time" id="acc_3"></td>
+            </tr>
+            <tr>
+                <td>quest_4</td>
+                <td class="start_time" id="start_4"></td>
+                <td class="acc_time" id="acc_4"></td>
+            </tr>
+            <tr>
+                <td>quest_5</td>
+                <td class="start_time" id="start_5"></td>
+                <td class="acc_time" id="acc_5"></td>
+            </tr>
+            <tr>
+                <td>时区</td>
+                <td id="timezone"></td>
+            </tr>
+            <tr>
+                <td>会话ID中记录的六位代码</td>
+                <td id="ses_sixid"></td>
+            </tr>
+        </table>
+        <pre id="console">
+            CONSOLE:
+        </pre>
+    </div>
+    <script type="text/javascript">
+        var hrp = new XMLHttpRequest(),
+            hrg = new XMLHttpRequest(),
+            sessid_now,
+            ip_sixid = document.getElementById('ip_sixid'),
+            six_id = document.getElementById('six_id'),
+            sess_id = document.getElementById('sess_id'),
+            ip_sess_id=document.getElementById("ip_sess_id"),
+            s = document.getElementById('status'),
+            start_time = document.getElementsByClassName('start_time'),
+            acc_time = document.getElementsByClassName('acc_time')
+        timezone = document.getElementById('timezone'),
+            ses_sixid = document.getElementById('ses_sixid'),
+            preConsole=document.getElementById("console");
+
+        function onload() {
+            let d = new Date()
+            s.innerHTML = "就绪"
+
+        }
+
+        function refresh(checkContents) {
+            if (!checkContents) {
+                getSessBySixID(ip_sixid.value)
+                six_id.innerHTML = ip_sixid.value
+            } else {
+                getSessContent(ip_sess_id.value)
+            }
+        }
+
+        function read(sr) {
+            let len = sr.length,
+                tmp = [],
+                firstSplit, lastSplit
+            if (sr.slice(0, 1) == "{" && sr.slice(len - 1, len) == "}") { //standResponse valid
+                firstSplit = sr.indexOf(",")
+                lastSplit = sr.lastIndexOf(",")
+                tmp[0] = sr.slice(1, firstSplit)
+                tmp[2] = sr.slice(lastSplit, len - 1)
+                if (tmp[2] != "") {
+                    tmp[1] = sr.slice(firstSplit + 1, lastSplit)
+                }
+                return tmp
+            } else {
+                return false
+            }
+        }
+        /* define("LIST_FILE_NOT_CREATED", 50);
+define("LIST_FILE_OPEN_FAILED", 51);
+define("LIST_NOT_FOUND", 52); */
+        function getSessBySixID(sixid) {
+            if (id_list("GET", 1, sixid, function (t) {
+                    let a = read(t)
+                    switch (parseInt(a[0])) {
+                        case 1:
+                            s.innerHTML = "成功"
+                            let sesA=JSON.parse(a[1])
+                            sess_id.innerHTML = sesA[0]
+                            if(sesA.length>1){
+                            for(let i=1;i<sesA.length;i++){
+                                sess_id.innerHTML+= String.fromCharCode(13) + sesA[i]
+                            }}
+                            break;
+                        case 50:
+                            s.innerHTML = "id_list尚未创建，请联系服务器管理员"
+                            break;
+                        case 51:
+                            s.innerHTML = "id_list打开失败，请联系服务器管理员"
+                            break;
+                        case 52:
+                            s.innerHTML = "未找到与给定的代码对应的会话ID"
+                            break;
+                        default:
+                            s.innerHTML = "未知的错误，返回码：" + a[0]
+                    }
+                }) == false) {
+                s.innerHTML = "不正确的请求方法！"
+            }
+        }
+
+        function id_list(m, qt, v, callback) {
+            if (m != "POST" && m != "GET") {
+                return false
+            }
+            if (m == "POST") {
+                hr = hrp
+                pre = "v=" + v
+                hr.open(m, "id_list.php", true);
+            } else {
+                hr = hrg;
+                pre = "qt=" + qt + "&v=" + v
+                hr.open(m, "id_list.php?" + pre, true);
+            }
+            hr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            hr.send(pre);
+            preConsole.innerHTML+="id_list.php POST:"+pre+String.fromCharCode(13)
+            hr.onreadystatechange = function () {
+                if (hr.readyState == 4 && hr.status == 200) {
+                    callback(hr.responseText)
+                    preConsole.innerHTML+=hr.responseText+String.fromCharCode(13)
+                }
+            }
+        }
+
+        function convertDate(ms) {
+            if (ms == 0) {
+                return "0"
+            }
+            let d = new Date(ms * 1000);
+            return (d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + (d.getDate()) + "日 " + d.getHours() + ":" + d
+                .getMinutes() + ":" + d.getSeconds())
+        }
+
+        function getSessContent(sesid) {
+            if (id_list("POST", "", sesid, function (t) {
+                    let a = read(t)
+                    switch (parseInt(a[0])) {
+                        /* define("SESSION_NOT_EXIST", 61);
+define("SESSION_OPEN_FAILED", 62);
+define("SESSION_LOCKED", 63); */
+                        case 1:
+                            let c = JSON.parse(a[1])
+                            timezone.innerHTML = c.time_zone
+                            ses_sixid.innerHTML= c.six_id
+                            for (let i = 0; i <= 4; i++) {
+                                start_time[i].innerHTML = convertDate(c.start_time["quest_" + (i + 1)])
+                                acc_time[i].innerHTML = convertDate(c.accomplish_time["quest_" + (i + 1)])
+                            }
+                            s.innerHTML = "成功"
+                            break
+                        case 61:
+                            s.innerHTML = "请求的会话ID不存在"
+                            break;
+                        case 62:
+                            s.innerHTML = "打开会话数据文件失败"
+                            break
+                        case 63:
+                            s.innerHTML = "会话数据文件已锁，可能正在访问中，请稍后再试"
+                            break
+                        default:
+                            s.innerHTML = "未知的错误，返回码：" + a[0]
+                    }
+                }) == false) {
+                s.innerHTML = "不正确的请求方法！"
+            }
+        }
+    </script>
+</body>
+
+</html>

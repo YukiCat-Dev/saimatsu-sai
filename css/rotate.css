@@ -1,0 +1,1 @@
+@keyframes rotate1{0%{transform:rotate(+0deg)}100%{transform:rotate(+90deg)}}@keyframes rotate2{0%{transform:rotate(+90deg)}100%{transform:rotate(+180deg)}}@keyframes rotate3{0%{transform:rotate(+180deg)}100%{transform:rotate(+270deg)}}@keyframes rotate4{0%{transform:rotate(+270deg)}100%{transform:rotate(+360deg)}}
